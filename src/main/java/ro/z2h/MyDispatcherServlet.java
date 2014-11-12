@@ -1,10 +1,12 @@
 package ro.z2h;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import ro.z2h.annotation.MyController;
 import ro.z2h.annotation.MyRequestMethod;
 import ro.z2h.controller.DepartmentController;
 import ro.z2h.controller.EmployeeController;
 import ro.z2h.fmk.AnnotationScanUtils;
+import ro.z2h.fmk.MethodAttributes;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -13,12 +15,16 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 
 /**
  * Created by Miha on 11/11/2014.
  */
 public class MyDispatcherServlet extends HttpServlet{
+    public HashMap<String, MethodAttributes> galeata = new HashMap<String, MethodAttributes>();//in mod normal, ar trebui sa o facem
+                                    // static,dar pt ca se face doar 1 instanta de dispatcherServlet, nu e nevoie sa mai punem static
 
     @Override
     public void init() throws ServletException {
@@ -26,16 +32,23 @@ public class MyDispatcherServlet extends HttpServlet{
             Iterable<Class> classes = AnnotationScanUtils.getClasses("ro.z2h.controller");
             for(Class aClass : classes) {
                 System.out.println(aClass.getName());
-                if(aClass.isAnnotationPresent(MyController.class)) {
+                if(aClass.isAnnotationPresent(MyController.class)) { //verif daca are adnotarea MyController
                     MyController ctrlAnnotation = (MyController) aClass.getAnnotation(MyController.class);
                     System.out.println(ctrlAnnotation.urlPath());
 
                     /*Ex 19: identificare metode care proceseaza business */
                     Method[] methods = aClass.getMethods();
                     for(Method method : methods) {
-                        if(method.isAnnotationPresent(MyRequestMethod.class)) {
+                        if(method.isAnnotationPresent(MyRequestMethod.class)) { //verif daca are adnotarea MyRequestMethod
                             MyRequestMethod methodAnnotation = (MyRequestMethod) method.getAnnotation(MyRequestMethod.class);
                             System.out.println(methodAnnotation.urlPath() + " " + methodAnnotation.methodType());
+
+                            MethodAttributes val = new MethodAttributes();
+                            val.setControllerClass(aClass.getName());
+                            val.setMethodName(method.getName());
+                            val.setMethodType(methodAnnotation.methodType());
+                            String key = ctrlAnnotation.urlPath() + methodAnnotation.urlPath();
+                            galeata.put(key, val);
                         }
                     }
                 }
@@ -60,28 +73,51 @@ public class MyDispatcherServlet extends HttpServlet{
         }
     }
 
-    private void sendException(Exception ex, HttpServletRequest req, HttpServletResponse resp) {
-        /* Tratare exceptii */
+    /* Unde ar trebui apelat un ApplicationController */
+    private Object dispatch(HttpServletRequest req, HttpServletResponse resp) {
+        String pathInfo = req.getPathInfo(); //url-ul fara parametri
+
+        /* Stabilire controller in functie de pathInfo */
+//        if(pathInfo.startsWith("/employee")) {
+//            EmployeeController controller = new EmployeeController();
+//            return controller.getAllEmployees();
+//        }
+//        if(pathInfo.startsWith("/department")){
+//            DepartmentController controller = new DepartmentController();
+//            return controller.getAllDepartments();
+//        }
+        MethodAttributes valoare = galeata.get(pathInfo);
+        try {
+            if(valoare != null) {
+                Class appControllerClass = Class.forName(valoare.getControllerClass());
+                Object appControllerInstance = appControllerClass.newInstance();
+                Method controllerMethod = appControllerClass.getMethod(valoare.getMethodName());
+                return controllerMethod.invoke(appControllerInstance);
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+
+        return "Hello";
     }
 
     private void reply(Object r, HttpServletRequest req, HttpServletResponse resp) throws IOException {
         PrintWriter out = resp.getWriter();
-        out.printf(r.toString());
+        ObjectMapper objectMapper = new ObjectMapper(); //clasa din libraria jackson care se ocupa cu afisarea obiectelor dupa un standard
+        String valueAsString = objectMapper.writeValueAsString(r);
+        out.printf(valueAsString);
     }
 
-    /* Unde ar trebui apelat un ApplicationController */
-    private Object dispatch(HttpServletRequest req, HttpServletResponse resp) {
-        String pathInfo = req.getPathInfo(); //url-ul
-        /* Stabilire controller in functie de pathInfo */
-        if(pathInfo.startsWith("/employee")) {
-            EmployeeController controller = new EmployeeController();
-            return controller.getAllEmployees();
-        }
-        if(pathInfo.startsWith("/department")){
-            DepartmentController controller = new DepartmentController();
-            return controller.getAllDepartments();
-        }
-        return "Hello";
+    private void sendException(Exception ex, HttpServletRequest req, HttpServletResponse resp) {
+        /* Tratare exceptii */
     }
 
     @Override
