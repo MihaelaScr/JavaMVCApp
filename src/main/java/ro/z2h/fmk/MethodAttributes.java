@@ -8,6 +8,15 @@ public class MethodAttributes {
     String controllerClass;
     String methodName;
     String methodType;
+    Class<?>[] methodParameterTypes;
+
+    public Class<?>[] getMethodParameterType() {
+        return methodParameterTypes;
+    }
+
+    public void setMethodParameterType(Class<?>[] methodParameterType) {
+        this.methodParameterTypes = methodParameterType;
+    }
 
     public String getControllerClass() {
         return controllerClass;

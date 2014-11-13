@@ -33,13 +33,25 @@ public class EmployeeController {
     }
 
     @MyRequestMethod(urlPath = "/one")
-    public Employee getOneEmployee() {
+    public Employee getOneEmployee(String idEmployee) {
 //        Employee employee = new Employee();
-//        employee.setId(111l);
+//        employee.setId(110l);
 //        employee.setLastName("Mihaela");
 //        employee.setFirstName("Scripcaru");
 
         EmployeeServiceImpl esi = new EmployeeServiceImpl();
-        return esi.findOneEmployee(110l);
+        return esi.findOneEmployee(Long.parseLong(idEmployee));
     }
+
+    @MyRequestMethod(urlPath = "/delete")
+    public void deleteOneEmployee(String idEmployee) {
+        EmployeeServiceImpl esi = new EmployeeServiceImpl();
+        esi.deleteOneEmployee(idEmployee);
+    }
+
+//    @MyRequestMethod(urlPath = "/create")
+//    public void saveEmployee(){
+//        EmployeeServiceImpl esi = new EmployeeServiceImpl();
+//        esi.insertOneEmployee();
+//    }
 }

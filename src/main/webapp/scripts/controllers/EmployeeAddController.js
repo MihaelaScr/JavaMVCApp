@@ -1,16 +1,16 @@
 hrApp.controller('EmployeeAddController', ['$scope', '$http', '$location', function ($scope, $http, $location) {
     $scope.employee = {};
 
-    $http({url: 'http://localhost:8282/datamodel/departments/findAll', method: 'GET'}).
+    $http({url: 'http://localhost:8080/app/mvc/department/all', method: 'GET'}).
         success(function (data) {
             $scope.departments = data;
         });
-    $http({url: 'http://localhost:8282/datamodel/employees/findAll', method: 'GET'}).
+    $http({url: 'http://localhost:8080/app/mvc/employee/all', method: 'GET'}).
         success(function (data) {
             $scope.managers = data;
         });
 
-    $http({url: 'http://localhost:8282/datamodel/jobs/findAll', method: 'GET'}).
+    $http({url: 'http://localhost:8080/app/mvc/job/all', method: 'GET'}).
         success(function (data) {
             $scope.jobs = data;
         });
@@ -27,7 +27,7 @@ hrApp.controller('EmployeeAddController', ['$scope', '$http', '$location', funct
      * @param addEmployee - employee to be persisted
      */
     $scope.create = function (addEmployee) {
-        $http({url: 'http://localhost:8282/datamodel/employees/create', method: 'PUT',data:addEmployee}).
+        $http({url: 'http://localhost:8080/app/mvc/employee/create', method: 'PUT',data:addEmployee}).
             success(function (data) {
                 $scope.employee = data;
                 $location.url('/employeeview/'+$scope.employee.employeeId);

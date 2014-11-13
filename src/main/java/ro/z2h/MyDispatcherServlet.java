@@ -17,7 +17,10 @@ import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Created by Miha on 11/11/2014.
@@ -48,6 +51,7 @@ public class MyDispatcherServlet extends HttpServlet{
                             val.setMethodName(method.getName());
                             val.setMethodType(methodAnnotation.methodType());
                             String key = ctrlAnnotation.urlPath() + methodAnnotation.urlPath();
+                            val.setMethodParameterType(method.getParameterTypes());
                             galeata.put(key, val);
                         }
                     }
@@ -86,13 +90,21 @@ public class MyDispatcherServlet extends HttpServlet{
 //            DepartmentController controller = new DepartmentController();
 //            return controller.getAllDepartments();
 //        }
-        MethodAttributes valoare = galeata.get(pathInfo);
+        MethodAttributes methodAttributes = galeata.get(pathInfo);
+        req.getParameterMap();
         try {
-            if(valoare != null) {
-                Class appControllerClass = Class.forName(valoare.getControllerClass());
+            if(methodAttributes != null) {
+                Class appControllerClass = Class.forName(methodAttributes.getControllerClass());
                 Object appControllerInstance = appControllerClass.newInstance();
-                Method controllerMethod = appControllerClass.getMethod(valoare.getMethodName());
-                return controllerMethod.invoke(appControllerInstance);
+                Method controllerMethod = appControllerClass.getMethod(methodAttributes.getMethodName(), methodAttributes.getMethodParameterType());
+
+                Parameter[] realParameters = controllerMethod.getParameters();
+                List<String> parametersValues = new ArrayList<>();
+                String[] methodParamsValues = new String[methodAttributes.getMethodParameterType().length];
+                for(Parameter param : realParameters){
+                    parametersValues.add(req.getParameter(param.getName()));
+                }
+                return controllerMethod.invoke(appControllerInstance, (String[]) parametersValues.toArray(new String[0]));
             }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -130,5 +142,10 @@ public class MyDispatcherServlet extends HttpServlet{
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         /* Delegate to someone(an ApplicationController) */
         dispatchReply("POST", req, resp);
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        dispatchReply("DELETE", req, resp);
     }
 }
